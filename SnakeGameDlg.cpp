@@ -32,9 +32,30 @@ BEGIN_MESSAGE_MAP(CSnakeGameDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_DESTROY()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
+void CSnakeGameDlg::DrawMap()
+{
+	m_draw_dc.SelectStockObject(DC_BRUSH);
+	m_draw_dc.SelectStockObject(DC_PEN);
 
+	m_draw_dc.SetDCPenColor(RGB(48, 48, 12));
+
+	for (int y = 0; y < 60; y++)
+	{
+		for (int x = 0; x < 80; x++)
+		{
+			if (m_count_map[y][x] > 0)
+			{
+				m_count_map[y][x]--;
+				if (m_count_map[y][x] == 0) m_table[y][x] = 0;
+			}
+			m_draw_dc.SetDCBrushColor(m_table[y][x]);
+			m_draw_dc.Rectangle(x * 10, y * 10, x * 10 + 11, y * 10 + 11);
+		}
+	}
+}
 // CSnakeGameDlg 메시지 처리기
 
 BOOL CSnakeGameDlg::OnInitDialog()
@@ -59,19 +80,12 @@ BOOL CSnakeGameDlg::OnInitDialog()
 		else i--;
 	}
 
-	m_draw_dc.SelectStockObject(DC_BRUSH);
-	m_draw_dc.SelectStockObject(DC_PEN);
-	
-	m_draw_dc.SetDCPenColor(RGB(48, 48, 12));
+	/*m_table[m_pos.y][m_pos.x] = RGB(0, 255, 0);
+	m_count_map[m_pos.y][m_pos.x] = m_eat_count + 1;*/
 
-	for (int y = 0; y < 60; y++)
-	{
-		for (int x = 0; x < 80; x++)
-		{
-			m_draw_dc.SetDCBrushColor(m_table[y][x]);
-			m_draw_dc.Rectangle(x * 10, y * 10, x * 10 + 11, y * 10 + 11);
-		}
-	}
+	DrawMap();
+
+	SetTimer(1, 50, NULL);
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -118,7 +132,81 @@ void CSnakeGameDlg::OnDestroy()
 {
 	CDialogEx::OnDestroy();
 
+	KillTimer(1);
 	m_draw_dc.Detach();
 	m_draw_image.ReleaseDC();
 	// TODO: 여기에 메시지 처리기 코드를 추가합니다.
+}
+
+void CSnakeGameDlg::GameOver()
+{
+	KillTimer(1);
+	MessageBox(L"미션에 실패하였습니다!", L"Game Over", MB_ICONSTOP);
+}
+
+void CSnakeGameDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == 1)
+	{
+		// m_table[m_pos.y][m_pos.x] = 0;
+		if (m_direction == 0) m_pos.x--;		// left
+		else if (m_direction == 1) m_pos.y--;	// up
+		else if (m_direction == 2) m_pos.x++;	// right
+		else m_pos.y++;	// down
+
+		if (m_pos.x >= 0 && m_pos.x <= 79 && m_pos.y >= 0 && m_pos.y <= 59)
+		{
+			if (m_table[m_pos.y][m_pos.x] == RGB(255, 0, 0))
+			{
+				m_eat_count++;
+				SetDlgItemInt(IDC_EAT_COUNT_EDIT, m_eat_count);
+			}
+			else if (m_table[m_pos.y][m_pos.x])
+			{
+				GameOver();
+				return;
+			}
+			m_table[m_pos.y][m_pos.x] = RGB(0, 255, 0);
+			m_count_map[m_pos.y][m_pos.x] = m_eat_count + 2;
+
+			DrawMap();
+			CClientDC dc(this);
+			m_draw_image.Draw(dc, 0, 0);
+		}
+		else
+		{
+			GameOver();
+		}
+	}
+	else
+	{
+		CDialogEx::OnTimer(nIDEvent);
+	}
+	
+}
+
+
+BOOL CSnakeGameDlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		if (pMsg->wParam >= VK_LEFT && pMsg->wParam <= VK_DOWN)
+		{
+			int old_direction = m_direction;
+			m_direction = pMsg->wParam - VK_LEFT;
+			if (old_direction > m_direction)
+			{
+				if ((old_direction - m_direction) == 2) m_direction = old_direction;
+			}
+			else 
+			{
+				if ((m_direction - old_direction) == 2) m_direction = old_direction;
+			}
+				
+			
+			return TRUE;
+		}
+	}
+
+	return CDialogEx::PreTranslateMessage(pMsg);
 }

@@ -13,9 +13,17 @@ private:
 	CDC m_draw_dc;
 
 	COLORREF m_table[60][80] = { 0, };
+	int m_count_map[60][80] = { 0, };
+
+	POINT m_pos = { 40,30 };
+	int m_direction = 0; // 0: Left, 1: Up, 2: Right, 3: Down
+	int m_eat_count = 0;
+
 // 생성입니다.
 public:
 	CSnakeGameDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.
+	void DrawMap();
+	void GameOver();
 
 // 대화 상자 데이터입니다.
 #ifdef AFX_DESIGN_TIME
@@ -37,4 +45,6 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnDestroy();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };
