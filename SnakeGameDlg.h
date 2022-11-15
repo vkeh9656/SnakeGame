@@ -4,6 +4,14 @@
 
 #pragma once
 
+#define MAX_EAT_COUNT	300
+#define MAX_LENGTH		300
+
+struct MapPoint 
+{
+	char x;
+	char y;
+};
 
 // CSnakeGameDlg 대화 상자
 class CSnakeGameDlg : public CDialogEx
@@ -12,7 +20,8 @@ private:
 	CImage m_draw_image;
 	CDC m_draw_dc;
 
-	COLORREF m_table[60][80] = { 0, };
+	MapPoint m_eat_pos[MAX_EAT_COUNT];		// 2 * 300 = 600
+	//COLORREF m_table[60][80] = { 0, };	// 60 * 80 * 4 = 19200 (18.75K)
 	int m_count_map[60][80] = { 0, };
 
 	POINT m_pos = { 40,30 };
