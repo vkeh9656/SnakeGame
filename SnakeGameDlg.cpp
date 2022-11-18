@@ -90,7 +90,6 @@ BOOL CSnakeGameDlg::OnInitDialog()
 	m_draw_dc.Attach(m_draw_image.GetDC());
 
 	srand((unsigned int)time(NULL));
-	int x, y;
 	MapPoint* p = m_eat_pos, *p_check;
 	for (int i = 0; i < MAX_EAT_COUNT; i++, p++)
 	{
