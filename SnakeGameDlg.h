@@ -4,8 +4,8 @@
 
 #pragma once
 
-#define MAX_EAT_COUNT	300
-#define MAX_LENGTH		300
+#define MAX_EAT_COUNT		300
+#define MAX_SNAKE_LENGTH	250
 
 struct MapPoint 
 {
@@ -20,13 +20,15 @@ private:
 	CImage m_draw_image;
 	CDC m_draw_dc;
 
-	MapPoint m_eat_pos[MAX_EAT_COUNT];		// 2 * 300 = 600
-	//COLORREF m_table[60][80] = { 0, };	// 60 * 80 * 4 = 19200 (18.75K)
-	int m_count_map[60][80] = { 0, };
+	MapPoint m_eat_pos[MAX_EAT_COUNT];		// 2 byte * 300 = 600	-> 아래 주석보다 32배 차이
+	MapPoint m_snake_pos[MAX_SNAKE_LENGTH]; 
+	//COLORREF m_table[60][80] = { 0, };	// 60 * 80 * 4 byte = 19200 (18.75K)
+	//int m_count_map[60][80] = { 0, };
 
-	POINT m_pos = { 40,30 };
-	int m_direction = 0; // 0: Left, 1: Up, 2: Right, 3: Down
+	MapPoint m_pos = { 40, 30 };
+	int m_direction = 0;	 // 0: Left, 1: Up, 2: Right, 3: Down
 	int m_eat_count = 0;
+	int m_remain_count = MAX_EAT_COUNT;
 
 // 생성입니다.
 public:

@@ -41,23 +41,42 @@ void CSnakeGameDlg::DrawMap()
 	m_draw_dc.SelectStockObject(DC_PEN);
 
 	m_draw_dc.SetDCPenColor(RGB(48, 48, 12));
+	m_draw_dc.SetDCBrushColor(RGB(0, 0, 0));
 
+	// Map 그리기 담당
 	for (int y = 0; y < 60; y++)
 	{
 		for (int x = 0; x < 80; x++)
 		{
-			if (m_count_map[y][x] > 0)
+			/*if (m_count_map[y][x] > 0)
 			{
 				m_count_map[y][x]--;
 				if (m_count_map[y][x] == 0) m_table[y][x] = 0;
 			}
-			m_draw_dc.SetDCBrushColor(m_table[y][x]);
+			m_draw_dc.SetDCBrushColor(m_table[y][x]);*/
 			m_draw_dc.Rectangle(x * 10, y * 10, x * 10 + 11, y * 10 + 11);
 		}
 	}
-}
-// CSnakeGameDlg 메시지 처리기
 
+	// 먹이 그리기 담당
+	MapPoint* p = m_eat_pos;
+	m_draw_dc.SetDCBrushColor(RGB(255, 0, 0));
+	for (int i = 0; i < m_remain_count; i++, p++) // 먹이가 존재하는 갯수만큼 반복하면서 빨간색 사각형 그리기
+	{
+		m_draw_dc.Rectangle(p->x * 10, p->y * 10, p->x * 10 + 11, p->y * 10 + 11);
+	}
+
+	// 뱀 그리기 담당
+	p = m_snake_pos;
+	m_draw_dc.SetDCBrushColor(RGB(0, 255, 0));
+	for (int i = 0; i < m_eat_count + 1; i++, p++)
+	{
+		m_draw_dc.Rectangle(p->x * 10, p->y * 10, p->x * 10 + 11, p->y * 10 + 11);
+	}
+}
+
+
+// CSnakeGameDlg 메시지 처리기
 BOOL CSnakeGameDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -72,12 +91,22 @@ BOOL CSnakeGameDlg::OnInitDialog()
 
 	srand((unsigned int)time(NULL));
 	int x, y;
-	for (int i = 0; i < 300; i++)
+	MapPoint* p = m_eat_pos, *p_check;
+	for (int i = 0; i < MAX_EAT_COUNT; i++, p++)
 	{
-		x = rand() % 80;
-		y = rand() % 60;
-		if (m_table[y][x] == 0) m_table[y][x] = RGB(255, 0, 0);
-		else i--;
+		p->x = rand() % 80;
+		p->y = rand() % 60;
+
+		p_check = m_eat_pos;
+		for (int sub_i = 0; sub_i < i; sub_i++, p_check++)
+		{
+			if (p_check->x == p->x && p_check->y == p->y) // 먹이가 같은 구간에 생성될 경우
+			{
+				i--;
+				p--;
+				break;
+			}
+		}
 	}
 
 	/*m_table[m_pos.y][m_pos.x] = RGB(0, 255, 0);
@@ -156,18 +185,67 @@ void CSnakeGameDlg::OnTimer(UINT_PTR nIDEvent)
 
 		if (m_pos.x >= 0 && m_pos.x <= 79 && m_pos.y >= 0 && m_pos.y <= 59)
 		{
-			if (m_table[m_pos.y][m_pos.x] == RGB(255, 0, 0))
+			MapPoint* p = m_eat_pos;
+			int eat_flag = 0;
+			
+			// 먹이 체크 코드
+			for (int i = 0; i < m_remain_count; i++, p++)
 			{
-				m_eat_count++;
-				SetDlgItemInt(IDC_EAT_COUNT_EDIT, m_eat_count);
+				if (p->x == m_pos.x && p->y == m_pos.y)
+				{
+					m_eat_count++;
+					m_remain_count--;
+					SetDlgItemInt(IDC_EAT_COUNT_EDIT, m_eat_count);
+					if (m_remain_count > 0 && i < m_remain_count)
+					{
+						p->x = m_eat_pos[m_remain_count].x;
+						p->y = m_eat_pos[m_remain_count].y;
+					}
+					eat_flag = 1;
+					break;
+				}
 			}
-			else if (m_table[m_pos.y][m_pos.x])
+
+			// 먹이를 먹지 못한 경우에 자신의 머리랑 꼬리랑 부딪혔는지 체크
+			if (m_eat_count != 0)
 			{
-				GameOver();
-				return;
+				if (eat_flag == 0)
+				{
+					p = m_snake_pos;
+					for (int i = 0; i < m_eat_count; i++, p++)
+					{
+						if (p->x == m_pos.x && p->y == m_pos.y)
+						{
+							GameOver();
+							return;
+						}
+					}
+				}
+
+				// 꼬리를 뒤로 이동
+				p = m_snake_pos + m_eat_count;
+				for (int i = 0; i < m_eat_count; i++, p--)
+				{
+					*p = *(p - 1);
+				}
 			}
-			m_table[m_pos.y][m_pos.x] = RGB(0, 255, 0);
-			m_count_map[m_pos.y][m_pos.x] = m_eat_count + 2;
+			// 머리 위치 대입
+			m_snake_pos[0].x = m_pos.x;
+			m_snake_pos[0].y = m_pos.y;
+			
+
+			//if (m_table[m_pos.y][m_pos.x] == RGB(255, 0, 0))
+			//{
+			//	m_eat_count++;
+			//	SetDlgItemInt(IDC_EAT_COUNT_EDIT, m_eat_count);
+			//}
+			//else if (m_table[m_pos.y][m_pos.x])
+			//{
+			//	GameOver();
+			//	return;
+			//}
+			//m_table[m_pos.y][m_pos.x] = RGB(0, 255, 0);
+			//m_count_map[m_pos.y][m_pos.x] = m_eat_count + 2;
 
 			DrawMap();
 			CClientDC dc(this);
